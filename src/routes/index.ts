@@ -71,6 +71,11 @@ routes.get(
   verifyToken,
   SessionController.getQrCode
 );
+routes.get(
+  '/api/:session/qrcode-session-json',
+  verifyToken,
+  SessionController.getQrCodeJson
+);
 routes.post(
   '/api/:session/start-session',
   verifyToken,
@@ -85,6 +90,10 @@ routes.post(
 routes.post(
   '/api/:session/:secretkey/clear-session-data',
   MiscController.clearSessionData
+);
+routes.post(
+  '/api/:session/:secretkey/clean-db',
+  MiscController.cleanDatabase
 );
 routes.post(
   '/api/:session/close-session',

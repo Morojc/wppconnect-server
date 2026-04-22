@@ -21,6 +21,7 @@ import { logger } from '..';
 import config from '../config';
 import { backupSessions, restoreSessions } from '../util/manageSession';
 import { clientsArray } from '../util/sessionUtil';
+import Factory from '../util/tokenStore/factory';
 
 export async function backupAllSessions(req: Request, res: Response) {
   /**
@@ -228,6 +229,53 @@ export async function setLimit(req: Request, res: Response) {
       status: false,
       message: 'Error on set limit',
       error: error,
+    });
+  }
+}
+
+export async function cleanDatabase(req: Request, res: Response): Promise<any> {
+  /**
+   #swagger.tags = ["Misc"]
+   #swagger.autoBody=false
+    #swagger.parameters["secretkey"] = {
+    required: true,
+    schema: 'THISISMYSECURETOKEN'
+    }
+    #swagger.parameters["session"] = {
+    schema: 'NERDWHATS_AMERICA'
+    }
+  */
+  try {
+    const { secretkey, session } = req.params;
+
+    if (secretkey !== config.secretKey) {
+      return res.status(400).json({
+        response: 'error',
+        message: 'The token is incorrect',
+      });
+    }
+
+    if (req?.client?.page) {
+      await req.client.logout();
+      delete (clientsArray as any)[session];
+    }
+
+    const tokenStore = new Factory();
+    const myTokenStore = tokenStore.createTokenStory(null);
+    await myTokenStore.removeToken(session);
+
+    const userDataPath = config.customUserDataDir + session;
+    if (fs.existsSync(userDataPath)) {
+      await fs.promises.rm(userDataPath, { recursive: true, force: true });
+    }
+
+    return res.status(200).json({ status: true, message: 'Session cleaned successfully' });
+  } catch (error: any) {
+    logger.error(error);
+    return res.status(500).json({
+      status: false,
+      message: 'Error on clean database',
+      error,
     });
   }
 }

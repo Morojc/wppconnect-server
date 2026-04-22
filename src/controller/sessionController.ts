@@ -812,7 +812,7 @@ export async function getQrCodeJson(req: Request, res: Response): Promise<any> {
      #swagger.parameters["session"] = {
       schema: 'NERDWHATS_AMERICA'
      }
-   */
+  */
   try {
     if (typeof req.client === 'undefined') {
       return res.status(200).json({

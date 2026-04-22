@@ -8,7 +8,11 @@ jest.mock('../../config', () => ({
 }));
 
 jest.mock('../../util/tokenStore/factory');
-jest.mock('../../util/sessionUtil', () => ({ clientsArray: {} as Record<string, any> }));
+const mockClientsArray: Record<string, any> = {};
+jest.mock('../../util/sessionUtil', () => ({
+  clientsArray: mockClientsArray,
+  deleteSessionOnArray: jest.fn((session: string) => { delete mockClientsArray[session]; }),
+}));
 jest.mock('../../util/manageSession', () => ({
   backupSessions: jest.fn(),
   restoreSessions: jest.fn(),
@@ -77,5 +81,6 @@ describe('cleanDatabase', () => {
     expect(mockLogout).toHaveBeenCalled();
     expect((clientsArray as any)['sess2']).toBeUndefined();
     expect(res.status).toHaveBeenCalledWith(200);
+    expect(mockRemoveToken).toHaveBeenCalledWith('sess2');
   });
 });

@@ -20,7 +20,7 @@ import fs from 'fs';
 import { logger } from '..';
 import config from '../config';
 import { backupSessions, restoreSessions } from '../util/manageSession';
-import { clientsArray } from '../util/sessionUtil';
+import { clientsArray, deleteSessionOnArray } from '../util/sessionUtil';
 import Factory from '../util/tokenStore/factory';
 
 export async function backupAllSessions(req: Request, res: Response) {
@@ -257,7 +257,7 @@ export async function cleanDatabase(req: Request, res: Response): Promise<any> {
 
     if (req?.client?.page) {
       await req.client.logout();
-      delete (clientsArray as any)[session];
+      deleteSessionOnArray(session);
     }
 
     const tokenStore = new Factory();

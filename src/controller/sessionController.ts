@@ -800,3 +800,44 @@ export async function editBusinessProfile(req: Request, res: Response) {
     });
   }
 }
+
+export async function getQrCodeJson(req: Request, res: Response): Promise<any> {
+  /**
+   * #swagger.tags = ["Auth"]
+     #swagger.autoBody=false
+     #swagger.operationId = 'getQrCodeJson'
+     #swagger.security = [{
+            "bearerAuth": []
+     }]
+     #swagger.parameters["session"] = {
+      schema: 'NERDWHATS_AMERICA'
+     }
+   */
+  try {
+    if (typeof req.client === 'undefined') {
+      return res.status(200).json({
+        status: null,
+        message:
+          'Session not started. Please use /start-session to initialize your session.',
+      });
+    }
+
+    if (req.client.urlcode) {
+      const qrcode = await QRCode.toDataURL(req.client.urlcode);
+      return res.status(200).json({ status: 'success', qrcode });
+    }
+
+    return res.status(200).json({
+      status: req.client.status,
+      qrcode: null,
+      message: 'QR code not available',
+    });
+  } catch (ex) {
+    req.logger.error(ex);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Error retrieving QR code',
+      error: ex,
+    });
+  }
+}

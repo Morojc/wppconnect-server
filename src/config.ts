@@ -68,7 +68,7 @@ export default {
       '--ignore-certificate-errors',
       '--ignore-ssl-errors',
       '--ignore-certificate-errors-spki-list',
-      '--no-proxy-server',
+      '--proxy-server=http://isp.decodo.com:10001',
     ],
     /**
      * Example of configuring the linkPreview generator

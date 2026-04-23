@@ -15,6 +15,7 @@ services:
       - ./config.ts:/usr/src/wpp-server/config.ts
       - ./wppconnect_tokens:/usr/src/wpp-server/tokens
       - ./userDataDir:/usr/src/wpp-server/userDataDir
+    entrypoint: sh -c "find /usr/src/wpp-server/userDataDir -name 'SingletonLock' -delete 2>/dev/null; node dist/server.js"
     ports:
       - "21465:21465"
     networks:

@@ -6,6 +6,11 @@ services:
     restart: unless-stopped
     build:
       context: .
+    environment:
+      - VIRTUAL_HOST=api.masksan.com
+      - VIRTUAL_PORT=21465
+      - LETSENCRYPT_HOST=api.masksan.com
+      - LETSENCRYPT_EMAIL=hmoro.dev@gmail.com
     volumes:
       - ./config.ts:/usr/src/wpp-server/config.ts
       - ./wppconnect_tokens:/usr/src/wpp-server/tokens

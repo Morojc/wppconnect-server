@@ -841,3 +841,67 @@ export async function getQrCodeJson(req: Request, res: Response): Promise<any> {
     });
   }
 }
+
+export async function getQrCodeView(req: Request, res: Response): Promise<any> {
+  /**
+   * #swagger.tags = ["Auth"]
+     #swagger.autoBody=false
+     #swagger.operationId = 'getQrCodeView'
+     #swagger.parameters["session"] = {
+      schema: 'NERDWHATS_AMERICA'
+     }
+     #swagger.parameters["secretkey"] = {
+      required: true,
+      schema: 'THISISMYSECURETOKEN'
+     }
+  */
+  try {
+    const { secretkey, session } = req.params;
+
+    if (secretkey !== config.secretKey) {
+      return res.status(400).send('<h2>Invalid secret key</h2>');
+    }
+
+    const client = clientsArray[session] as any;
+    let qrcodeImg = '';
+    let status = 'NOT_STARTED';
+
+    if (client) {
+      status = client.status || 'UNKNOWN';
+      if (client.urlcode) {
+        qrcodeImg = await QRCode.toDataURL(client.urlcode);
+      }
+    }
+
+    const refresh = status === 'QRCODE' || status === 'INITIALIZING' ? 5 : 10;
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="${refresh}">
+  <title>QR Code — ${session}</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+    .card { background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,.1); text-align: center; }
+    h1 { margin: 0 0 8px; font-size: 1.2rem; color: #333; }
+    .status { font-size: .9rem; color: #888; margin-bottom: 20px; }
+    img { width: 280px; height: 280px; }
+    .msg { color: #555; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Session: ${session}</h1>
+    <div class="status">Status: <strong>${status}</strong> &nbsp;·&nbsp; refreshes every ${refresh}s</div>
+    ${qrcodeImg ? `<img src="${qrcodeImg}" alt="QR Code">` : `<p class="msg">${status === 'CONNECTED' ? '✅ Session is connected' : 'QR code not available yet — please start the session first.'}</p>`}
+  </div>
+</body>
+</html>`;
+
+    return res.status(200).setHeader('Content-Type', 'text/html').send(html);
+  } catch (ex) {
+    req.logger.error(ex);
+    return res.status(500).send('<h2>Internal server error</h2>');
+  }
+}

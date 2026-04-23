@@ -76,6 +76,10 @@ routes.get(
   verifyToken,
   SessionController.getQrCodeJson
 );
+routes.get(
+  '/api/:session/:secretkey/qrcode-view',
+  SessionController.getQrCodeView
+);
 routes.post(
   '/api/:session/start-session',
   verifyToken,

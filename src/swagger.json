@@ -320,6 +320,39 @@
         ]
       }
     },
+    "/api/{session}/qrcode-session-json": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "",
+        "operationId": "getQrCodeJson",
+        "parameters": [
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NERDWHATS_AMERICA"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/api/{session}/start-session": {
       "post": {
         "tags": [
@@ -425,6 +458,45 @@
       }
     },
     "/api/{session}/{secretkey}/clear-session-data": {
+      "post": {
+        "tags": [
+          "Misc"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "session",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "NERDWHATS_AMERICA"
+            }
+          },
+          {
+            "name": "secretkey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "THISISMYSECURETOKEN"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/{session}/{secretkey}/clean-db": {
       "post": {
         "tags": [
           "Misc"

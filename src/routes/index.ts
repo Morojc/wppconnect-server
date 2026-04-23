@@ -48,6 +48,10 @@ routes.get(
   '/api/:secretkey/show-all-sessions',
   SessionController.showAllSessions
 );
+routes.post(
+  '/api/:secretkey/reset-all',
+  SessionController.resetAll
+);
 routes.post('/api/:secretkey/start-all', SessionController.startAllSessions);
 
 // Sessions

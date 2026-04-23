@@ -17,6 +17,7 @@ import { Message, Whatsapp } from '@wppconnect-team/wppconnect';
 import { Request, Response } from 'express';
 import fs from 'fs';
 import mime from 'mime-types';
+import path from 'path';
 import QRCode from 'qrcode';
 import { Logger } from 'winston';
 
@@ -904,4 +905,89 @@ export async function getQrCodeView(req: Request, res: Response): Promise<any> {
     req.logger.error(ex);
     return res.status(500).send('<h2>Internal server error</h2>');
   }
+}
+
+export async function resetAll(req: Request, res: Response): Promise<any> {
+  /**
+   * #swagger.tags = ["Auth"]
+   * #swagger.operationId = 'resetAll'
+   * #swagger.description = 'Close all sessions, delete all tokens and userDataDir cache'
+   * #swagger.autoBody=false
+   * #swagger.autoHeaders=false
+   * #swagger.parameters['secretkey'] = { schema: 'THISISMYSECURETOKEN' }
+   */
+  const { secretkey } = req.params;
+  if (secretkey !== (req as any).serverOptions.secretKey) {
+    return res.status(400).json({ status: 'error', message: 'Invalid secret key' });
+  }
+
+  const closed: string[] = [];
+  const deletedTokens: string[] = [];
+  const deletedDirs: string[] = [];
+  const errors: string[] = [];
+
+  // 1. Close every active session
+  const sessions = Object.keys(clientsArray);
+  for (const session of sessions) {
+    try {
+      const client = (clientsArray as any)[session];
+      if (client && client.status && client.status !== 'CLOSED' && typeof client.close === 'function') {
+        await client.close();
+      }
+      (clientsArray as any)[session] = { status: null };
+      closed.push(session);
+    } catch (err: any) {
+      errors.push(`close ${session}: ${err?.message}`);
+    }
+  }
+
+  // 2. Delete token files (./tokens/)
+  const tokensDir = path.resolve(process.cwd(), './tokens');
+  if (fs.existsSync(tokensDir)) {
+    try {
+      const files = await fs.promises.readdir(tokensDir);
+      for (const file of files) {
+        try {
+          await fs.promises.unlink(path.join(tokensDir, file));
+          deletedTokens.push(file);
+        } catch (err: any) {
+          errors.push(`token ${file}: ${err?.message}`);
+        }
+      }
+    } catch (err: any) {
+      errors.push(`readdir tokens: ${err?.message}`);
+    }
+  }
+
+  // 3. Delete Chromium user data dirs (./userDataDir/)
+  const userDataBase = path.resolve(
+    process.cwd(),
+    (req as any).serverOptions.customUserDataDir ?? './userDataDir/'
+  );
+  if (fs.existsSync(userDataBase)) {
+    try {
+      const entries = await fs.promises.readdir(userDataBase);
+      for (const entry of entries) {
+        try {
+          await fs.promises.rm(path.join(userDataBase, entry), { recursive: true, force: true });
+          deletedDirs.push(entry);
+        } catch (err: any) {
+          errors.push(`userDataDir ${entry}: ${err?.message}`);
+        }
+      }
+    } catch (err: any) {
+      errors.push(`readdir userDataDir: ${err?.message}`);
+    }
+  }
+
+  req.io.emit('whatsapp-status', false);
+
+  return res.status(200).json({
+    status: 'success',
+    message: 'All sessions closed and cache cleared',
+    closed,
+    deletedTokens,
+    deletedDirs,
+    errors,
+  });
 }

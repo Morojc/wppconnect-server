@@ -60,19 +60,16 @@ export default class CreateSessionUtil {
         };
       }
 
+      const proxyConfig: { url: string; username: string; password: string } | undefined =
+        client.config.proxy?.url
+          ? { url: client.config.proxy.url, username: client.config.proxy.username ?? '', password: client.config.proxy.password ?? '' }
+          : undefined;
+
       const wppClient = await create(
         Object.assign(
           {},
           { tokenStore: myTokenStore },
-          client.config.proxy
-            ? {
-                proxy: {
-                  url: client.config.proxy?.url,
-                  username: client.config.proxy?.username,
-                  password: client.config.proxy?.password,
-                },
-              }
-            : {},
+          proxyConfig ? { proxy: proxyConfig } : {},
           req.serverOptions.createOptions,
           {
             session: session,

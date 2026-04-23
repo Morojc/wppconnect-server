@@ -16,6 +16,13 @@ services:
       - ./wppconnect_tokens:/usr/src/wpp-server/tokens
     ports:
       - "21465:21465"
+    networks:
+      - nginx-public
+      - default
 
 volumes:
-  wppconnect_tokens: {}      
+  wppconnect_tokens: {}
+
+networks:
+  nginx-public:
+    external: true

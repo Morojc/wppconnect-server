@@ -68,6 +68,7 @@ export default {
       '--ignore-certificate-errors',
       '--ignore-ssl-errors',
       '--ignore-certificate-errors-spki-list',
+      '--no-proxy-server',
     ],
     /**
      * Example of configuring the linkPreview generator

@@ -788,6 +788,12 @@ routes.get(
   statusConnection,
   ContactController.getContactPnLid
 );
+routes.post(
+  '/api/:session/contact/request-phone-number/:pnLid',
+  verifyToken,
+  statusConnection,
+  ContactController.requestPhoneNumber
+);
 routes.get(
   '/api/:session/profile/:phone',
   verifyToken,

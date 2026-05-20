@@ -35,6 +35,9 @@ export interface ServerOptions {
     waitTime: number;
     daysToArchive: number;
   };
+  phoneNumber?: {
+    defaultCountryCode?: string;
+  };
   log: {
     level: string;
     logger: string[];

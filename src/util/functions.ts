@@ -43,6 +43,28 @@ if (config?.websocket?.uploadS3) {
   crypto = config.websocket.uploadS3 ? Crypto : null;
 }
 
+// Rewrites a raw phone string into international (E.164-like) form when a
+// default country code is configured. Examples for defaultCountryCode='212':
+//   '+212612345678' / '212612345678' -> '212612345678'  (already international)
+//   '0612345678'                     -> '212612345678'  (strip trunk 0, prepend CC)
+//   '612345678'                      -> '212612345678'  (no CC, short enough)
+//   '34611112222'                    -> '34611112222'   (already international for another country, untouched)
+export function normalizePhoneNumber(
+  raw: string,
+  defaultCountryCode?: string
+): string {
+  if (!defaultCountryCode) return raw;
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return raw;
+  if (digits.startsWith(defaultCountryCode)) return digits;
+  if (digits.startsWith('0')) return defaultCountryCode + digits.slice(1);
+  if (digits.length <= 10) return defaultCountryCode + digits;
+  return digits;
+}
+
+const defaultCountryCode: string | undefined = (config as any)?.phoneNumber
+  ?.defaultCountryCode;
+
 export function contactToArray(
   number: any,
   isGroup?: boolean,
@@ -55,6 +77,8 @@ export function contactToArray(
       isGroup || isNewsletter
         ? (contact = contact.split('@')[0])
         : (contact = contact.split('@')[0]?.replace(/[^\w ]/g, ''));
+      if (!isGroup && !isNewsletter && !isLid)
+        contact = normalizePhoneNumber(contact, defaultCountryCode);
       if (contact !== '')
         if (isGroup) (localArr as any).push(`${contact}@g.us`);
         else if (isNewsletter) (localArr as any).push(`${contact}@newsletter`);
@@ -68,6 +92,8 @@ export function contactToArray(
       isGroup || isNewsletter
         ? (contact = contact.split('@')[0])
         : (contact = contact.split('@')[0]?.replace(/[^\w ]/g, ''));
+      if (!isGroup && !isNewsletter && !isLid)
+        contact = normalizePhoneNumber(contact, defaultCountryCode);
       if (contact !== '')
         if (isGroup) (localArr as any).push(`${contact}@g.us`);
         else if (isNewsletter) (localArr as any).push(`${contact}@newsletter`);

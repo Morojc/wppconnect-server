@@ -39,6 +39,12 @@ export default {
     waitTime: 10,
     daysToArchive: 45,
   },
+  phoneNumber: {
+    // When set, local-format numbers (e.g. "0612345678") are converted to
+    // the international form (e.g. "212612345678") before building the JID.
+    // Leave undefined to disable normalization.
+    defaultCountryCode: '212',
+  },
   log: {
     level: 'silly', // Before open a issue, change level to silly and retry a action
     logger: ['console', 'file'],

@@ -48,10 +48,7 @@ routes.get(
   '/api/:secretkey/show-all-sessions',
   SessionController.showAllSessions
 );
-routes.post(
-  '/api/:secretkey/reset-all',
-  SessionController.resetAll
-);
+routes.post('/api/:secretkey/reset-all', SessionController.resetAll);
 routes.post('/api/:secretkey/start-all', SessionController.startAllSessions);
 
 // Sessions
@@ -99,10 +96,7 @@ routes.post(
   '/api/:session/:secretkey/clear-session-data',
   MiscController.clearSessionData
 );
-routes.post(
-  '/api/:session/:secretkey/clean-db',
-  MiscController.cleanDatabase
-);
+routes.post('/api/:session/:secretkey/clean-db', MiscController.cleanDatabase);
 routes.post(
   '/api/:session/close-session',
   verifyToken,

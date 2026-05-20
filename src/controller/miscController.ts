@@ -269,7 +269,9 @@ export async function cleanDatabase(req: Request, res: Response): Promise<any> {
       await fs.promises.rm(userDataPath, { recursive: true, force: true });
     }
 
-    return res.status(200).json({ status: true, message: 'Session cleaned successfully' });
+    return res
+      .status(200)
+      .json({ status: true, message: 'Session cleaned successfully' });
   } catch (error: any) {
     logger.error(error);
     return res.status(500).json({

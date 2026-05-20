@@ -1,5 +1,9 @@
 import fs from 'fs';
 
+import { cleanDatabase } from '../../controller/miscController';
+import { clientsArray } from '../../util/sessionUtil';
+import Factory from '../../util/tokenStore/factory';
+
 jest.mock('../../config', () => ({
   secretKey: 'test-secret',
   customUserDataDir: './userDataDir/',
@@ -11,7 +15,9 @@ jest.mock('../../util/tokenStore/factory');
 const mockClientsArray: Record<string, any> = {};
 jest.mock('../../util/sessionUtil', () => ({
   clientsArray: mockClientsArray,
-  deleteSessionOnArray: jest.fn((session: string) => { delete mockClientsArray[session]; }),
+  deleteSessionOnArray: jest.fn((session: string) => {
+    delete mockClientsArray[session];
+  }),
 }));
 jest.mock('../../util/manageSession', () => ({
   backupSessions: jest.fn(),
@@ -23,10 +29,6 @@ jest.mock('fs', () => ({
   promises: { rm: jest.fn().mockResolvedValue(undefined) },
 }));
 jest.mock('../..', () => ({ logger: { error: jest.fn() } }));
-
-import { cleanDatabase } from '../../controller/miscController';
-import { clientsArray } from '../../util/sessionUtil';
-import Factory from '../../util/tokenStore/factory';
 
 function makeRes() {
   const res: any = {};
@@ -42,7 +44,9 @@ describe('cleanDatabase', () => {
     jest.clearAllMocks();
     mockRemoveToken = jest.fn().mockResolvedValue(true);
     (Factory as jest.Mock).mockImplementation(() => ({
-      createTokenStory: jest.fn().mockReturnValue({ removeToken: mockRemoveToken }),
+      createTokenStory: jest
+        .fn()
+        .mockReturnValue({ removeToken: mockRemoveToken }),
     }));
   });
 
@@ -59,13 +63,22 @@ describe('cleanDatabase', () => {
 
   it('removes token and userDataDir when session is inactive', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(true);
-    const req: any = { params: { session: 'sess1', secretkey: 'test-secret' }, client: undefined };
+    const req: any = {
+      params: { session: 'sess1', secretkey: 'test-secret' },
+      client: undefined,
+    };
     const res = makeRes();
     await cleanDatabase(req, res);
     expect(mockRemoveToken).toHaveBeenCalledWith('sess1');
-    expect(fs.promises.rm).toHaveBeenCalledWith('./userDataDir/sess1', { recursive: true, force: true });
+    expect(fs.promises.rm).toHaveBeenCalledWith('./userDataDir/sess1', {
+      recursive: true,
+      force: true,
+    });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ status: true, message: 'Session cleaned successfully' });
+    expect(res.json).toHaveBeenCalledWith({
+      status: true,
+      message: 'Session cleaned successfully',
+    });
   });
 
   it('calls logout and removes client from array when session is active', async () => {

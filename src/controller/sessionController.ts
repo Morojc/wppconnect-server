@@ -895,7 +895,15 @@ export async function getQrCodeView(req: Request, res: Response): Promise<any> {
   <div class="card">
     <h1>Session: ${session}</h1>
     <div class="status">Status: <strong>${status}</strong> &nbsp;·&nbsp; refreshes every ${refresh}s</div>
-    ${qrcodeImg ? `<img src="${qrcodeImg}" alt="QR Code">` : `<p class="msg">${status === 'CONNECTED' ? '✅ Session is connected' : 'QR code not available yet — please start the session first.'}</p>`}
+    ${
+      qrcodeImg
+        ? `<img src="${qrcodeImg}" alt="QR Code">`
+        : `<p class="msg">${
+            status === 'CONNECTED'
+              ? '✅ Session is connected'
+              : 'QR code not available yet — please start the session first.'
+          }</p>`
+    }
   </div>
 </body>
 </html>`;
@@ -918,7 +926,9 @@ export async function resetAll(req: Request, res: Response): Promise<any> {
    */
   const { secretkey } = req.params;
   if (secretkey !== (req as any).serverOptions.secretKey) {
-    return res.status(400).json({ status: 'error', message: 'Invalid secret key' });
+    return res
+      .status(400)
+      .json({ status: 'error', message: 'Invalid secret key' });
   }
 
   const closed: string[] = [];
@@ -931,7 +941,12 @@ export async function resetAll(req: Request, res: Response): Promise<any> {
   for (const session of sessions) {
     try {
       const client = (clientsArray as any)[session];
-      if (client && client.status && client.status !== 'CLOSED' && typeof client.close === 'function') {
+      if (
+        client &&
+        client.status &&
+        client.status !== 'CLOSED' &&
+        typeof client.close === 'function'
+      ) {
         await client.close();
       }
       (clientsArray as any)[session] = { status: null };
@@ -969,7 +984,10 @@ export async function resetAll(req: Request, res: Response): Promise<any> {
       const entries = await fs.promises.readdir(userDataBase);
       for (const entry of entries) {
         try {
-          await fs.promises.rm(path.join(userDataBase, entry), { recursive: true, force: true });
+          await fs.promises.rm(path.join(userDataBase, entry), {
+            recursive: true,
+            force: true,
+          });
           deletedDirs.push(entry);
         } catch (err: any) {
           errors.push(`userDataDir ${entry}: ${err?.message}`);

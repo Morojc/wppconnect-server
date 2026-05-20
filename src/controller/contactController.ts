@@ -75,7 +75,7 @@ export default class ContactController {
       // uses internally for unwrapped wa-js functions (evaluateAndReturn).
       const response = await req.client.page.evaluate(
         (jid: string) => (window as any).WPP.chat.requestPhoneNumber(jid),
-        pnLid,
+        pnLid
       );
       res.status(200).json(response);
     } catch (error) {

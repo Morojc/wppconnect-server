@@ -1760,7 +1760,8 @@ export async function setTyping(req: Request, res: Response) {
    */
   const { phone, isGroup = false } = req.body;
   // Normalize value: n8n bodyParameters sends booleans as strings ("true"/"false")
-  const value = req.body.value == null ? true : String(req.body.value) !== 'false';
+  const value =
+    req.body.value == null ? true : String(req.body.value) !== 'false';
   try {
     let response;
     for (const contato of contactToArray(phone, isGroup)) {

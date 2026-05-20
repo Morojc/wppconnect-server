@@ -1,6 +1,6 @@
 {
   "name": "@wppconnect/server",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "Projeto feito para autenticar a automomacao do WhatsappWeb com multi-clientes de forma dinamica. Backend feito em Nodejs(express, socketio), FrontEnd (ReactJS)",
   "main": "dist/index.js",
   "author": "kingaspx",
@@ -32,14 +32,14 @@
     "test": "jest"
   },
   "engines": {
-    "node": "22.22.1"
+    "node": "22.22.2"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.14.1",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1014.0",
-    "@wppconnect-team/wppconnect": "^1.41.1",
+    "@aws-sdk/client-s3": "^3.1019.0",
+    "@wppconnect-team/wppconnect": "^2.1.0",
     "archiver": "^7.0.1",
-    "axios": "^1.13.6",
+    "axios": "^1.14.0",
     "bcrypt": "^6.0.0",
     "buffer-to-stream": "1.0.0",
     "cors": "^2.8.6",
@@ -86,7 +86,7 @@
     "@types/swagger-ui-express": "^4.1.8",
     "@types/unzipper": "^0.10.11",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.2",
     "commitizen": "^4.3.1",
     "conventional-changelog-cli": "^5.0.0",
     "crypto-js": "^4.2.0",

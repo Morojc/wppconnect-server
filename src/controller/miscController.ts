@@ -157,19 +157,55 @@ export async function clearSessionData(req: Request, res: Response) {
         message: 'The token is incorrect',
       });
     }
-    if (req?.client?.page) {
+
+    // Tear down whatever in-memory client exists for this session. This route
+    // authenticates with the secret key (no verifyToken middleware), so
+    // `req.client` is never populated — we must reach into clientsArray
+    // directly. Two shapes can live there:
+    //   * a fully-created wppClient (CONNECTED) — has `.page`, `.logout`, `.close`
+    //   * a lightweight placeholder (QRCODE / INITIALIZING) — has none of those,
+    //     just `{ status, session, qrcode }`, with an orphaned Puppeteer browser
+    //     still rendering an expired QR.
+    // Each teardown call is guarded so a missing method or an already-dead
+    // browser can't abort the wipe. logout() (when there's a live page) unlinks
+    // the WhatsApp device so the next start issues a BRAND-NEW QR instead of
+    // silently re-pairing the old credentials.
+    const client: any = clientsArray[req.params.session];
+    if (client) {
+      try {
+        if (client.page && typeof client.logout === 'function') {
+          await client.logout();
+        }
+      } catch (e) {
+        logger.warn(e);
+      }
+      try {
+        if (typeof client.close === 'function') {
+          await client.close();
+        }
+      } catch (e) {
+        logger.warn(e);
+      }
+      // ALWAYS free the slot. Without this, a session stuck in QRCODE keeps
+      // status === 'QRCODE', and the next start-session early-returns in
+      // createSessionUtil (`if (client.status != null && client.status !==
+      // 'CLOSED') return`) — so the expired QR never refreshes. This is the
+      // root cause of "reset / refresh QR does nothing".
       delete clientsArray[req.params.session];
-      await req.client.logout();
     }
+
     const path = config.customUserDataDir + session;
     const pathToken = __dirname + `../../../tokens/${session}.data.json`;
     if (fs.existsSync(path)) {
       await fs.promises.rm(path, {
         recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 1000,
       });
     }
     if (fs.existsSync(pathToken)) {
-      await fs.promises.rm(pathToken);
+      await fs.promises.rm(pathToken, { force: true });
     }
     res.status(200).json({ success: true });
   } catch (error: any) {

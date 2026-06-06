@@ -168,7 +168,11 @@ describe('clearSessionData', () => {
   it('still succeeds and frees the slot when logout throws', async () => {
     (fs.existsSync as jest.Mock).mockReturnValue(false);
     const logout = jest.fn().mockRejectedValue(new Error('boom'));
-    (clientsArray as any)['sess-bad'] = { status: 'CONNECTED', page: {}, logout };
+    (clientsArray as any)['sess-bad'] = {
+      status: 'CONNECTED',
+      page: {},
+      logout,
+    };
     const req: any = {
       params: { session: 'sess-bad', secretkey: 'test-secret' },
     };

@@ -14,7 +14,16 @@ export default {
     url: null,
     autoDownload: true,
     uploadS3: false,
-    readMessage: true,
+    // false: do NOT auto-mark every inbound as "seen" server-side. With this
+    // true, src/util/functions.ts fires client.sendSeen(chatId) on every
+    // onmessage webhook — independent of the dashboard and the AI toggle — so
+    // the customer saw blue ticks even when AI was deactivated (and only from
+    // the 2nd message on, because the 1st raced the cold WhatsApp-Web chat
+    // load and silently failed). The dashboard now owns "seen": humanizedSend
+    // marks the chat read only when the bot/operator is actually about to
+    // reply, and skips it entirely when AI is off. See wpp-dashboard
+    // lib/wpp/humanizedSend.ts + the AI gate in internal/conversation/reply.
+    readMessage: false,
     allUnreadOnStart: false,
     listenAcks: true,
     onPresenceChanged: true,

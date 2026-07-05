@@ -63,6 +63,17 @@ export function initServer(serverOptions: Partial<ServerOptions>): {
       String(process.env.WEBHOOK_READ_MESSAGE).toLowerCase() === 'true';
   }
 
+  // Deploy-time override (same rationale as WEBHOOK_READ_MESSAGE above).
+  // WEBHOOK_ON_SELF_MESSAGE=true makes the server forward `onselfmessage`
+  // webhooks for messages the OWNER's account sends (fromMe) — required for the
+  // dashboard's human-takeover feature: when the owner replies to a customer
+  // manually, the app auto-pauses the AI for that conversation.
+  // Accepts "true"/"false" (any other / unset value falls back to config.ts).
+  if (process.env.WEBHOOK_ON_SELF_MESSAGE !== undefined && serverOptions.webhook) {
+    serverOptions.webhook.onSelfMessage =
+      String(process.env.WEBHOOK_ON_SELF_MESSAGE).toLowerCase() === 'true';
+  }
+
   defaultLogger.level = serverOptions?.log?.level
     ? serverOptions.log.level
     : 'silly';

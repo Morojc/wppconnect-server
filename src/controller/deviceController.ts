@@ -1758,13 +1758,28 @@ export async function setTyping(req: Request, res: Response) {
       }
      }
    */
-  const { phone, isGroup = false } = req.body;
+  // `isLid`/`isNewsletter` were being dropped here, which silently broke typing
+  // for a whole class of contact. contactToArray only routes to the @lid address
+  // space when it is told to, OR when it guesses from `contact.length > 14` —
+  // so a 14-digit LID became `<digits>@c.us`, a chat WA-JS has no record of, and
+  // startTyping threw. Reproduced exactly: 14-character LIDs failed, 15-character
+  // ones succeeded, on the same account.
+  //
+  // sendSeen never had this problem because it iterates `req.body.phone`
+  // directly — statusConnection has already normalised it by then — instead of
+  // re-deriving the address here.
+  const {
+    phone,
+    isGroup = false,
+    isNewsletter = false,
+    isLid = false,
+  } = req.body;
   // Normalize value: n8n bodyParameters sends booleans as strings ("true"/"false")
   const value =
     req.body.value == null ? true : String(req.body.value) !== 'false';
   try {
     let response;
-    for (const contato of contactToArray(phone, isGroup)) {
+    for (const contato of contactToArray(phone, isGroup, isNewsletter, isLid)) {
       if (value) response = await req.client.startTyping(contato);
       else response = await req.client.stopTyping(contato);
     }

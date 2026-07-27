@@ -11,6 +11,16 @@ services:
       - VIRTUAL_PORT=21465
       - LETSENCRYPT_HOST=api.masksan.com
       - LETSENCRYPT_EMAIL=hmoro.dev@gmail.com
+      # false = don't auto-mark inbound messages "seen" server-side; the
+      # dashboard sends the read receipt only when actually replying (and not
+      # when AI is off). Flip to true to restore the old auto-seen behavior.
+      # Overrides webhook.readMessage in config.ts — no source edit needed.
+      - WEBHOOK_READ_MESSAGE=false
+      # true = forward `onselfmessage` webhooks (messages the owner's account
+      # sends). Required for the dashboard's human-takeover: when the owner
+      # replies to a customer manually, the app auto-pauses the AI for that
+      # chat. Overrides webhook.onSelfMessage in config.ts — no source edit.
+      - WEBHOOK_ON_SELF_MESSAGE=true
     volumes:
       - ./config.ts:/usr/src/wpp-server/config.ts
       - ./wppconnect_tokens:/usr/src/wpp-server/tokens

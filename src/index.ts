@@ -50,6 +50,33 @@ export function initServer(serverOptions: Partial<ServerOptions>): {
   }
 
   serverOptions = mergeDeep({}, config, serverOptions);
+
+  // Deploy-time override for the webhook read-receipt behavior, so it can be
+  // flipped from docker-compose env WITHOUT editing src/config.ts (the runtime
+  // reads compiled dist/, so a config.ts edit would need a source rebuild
+  // anyway). WEBHOOK_READ_MESSAGE=false stops the server auto-marking every
+  // inbound "seen" — the dashboard owns the read receipt then, sending it only
+  // when the bot/operator is actually replying and skipping it when AI is off.
+  // Accepts "true"/"false" (any other / unset value falls back to config.ts).
+  if (process.env.WEBHOOK_READ_MESSAGE !== undefined && serverOptions.webhook) {
+    serverOptions.webhook.readMessage =
+      String(process.env.WEBHOOK_READ_MESSAGE).toLowerCase() === 'true';
+  }
+
+  // Deploy-time override (same rationale as WEBHOOK_READ_MESSAGE above).
+  // WEBHOOK_ON_SELF_MESSAGE=true makes the server forward `onselfmessage`
+  // webhooks for messages the OWNER's account sends (fromMe) — required for the
+  // dashboard's human-takeover feature: when the owner replies to a customer
+  // manually, the app auto-pauses the AI for that conversation.
+  // Accepts "true"/"false" (any other / unset value falls back to config.ts).
+  if (
+    process.env.WEBHOOK_ON_SELF_MESSAGE !== undefined &&
+    serverOptions.webhook
+  ) {
+    serverOptions.webhook.onSelfMessage =
+      String(process.env.WEBHOOK_ON_SELF_MESSAGE).toLowerCase() === 'true';
+  }
+
   defaultLogger.level = serverOptions?.log?.level
     ? serverOptions.log.level
     : 'silly';

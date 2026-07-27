@@ -36,16 +36,37 @@ export default async function statusConnection(
       );
       let index = 0;
       for (const contact of localArr) {
-        if (req.body.isGroup || req.body.isNewsletter) {
+        // Skip the phone-existence check for address spaces that are NOT phone
+        // numbers.
+        //
+        // A LID is WhatsApp's privacy identifier for a contact that hasn't
+        // shared its number — a 14-17 digit synthetic id, never an MSISDN.
+        // Running checkNumberStatus on one asks "is this a real phone?" about
+        // something that was never a phone, so it answers no and every request
+        // for that contact dies with `O número <lid> não existe`, even though
+        // the chat exists and is perfectly reachable. That made send-seen and
+        // typing impossible for any contact WhatsApp addresses by LID.
+        //
+        // `isLid` was already threaded into contactToArray above but was
+        // missing from this guard, which is the whole bug. The suffix check is
+        // the belt-and-braces half: callers that pass a fully-formed `<id>@lid`
+        // without setting the flag are just as correct, and contactToArray's
+        // "longer than 14 digits" heuristic silently misroutes a 14-digit LID
+        // to @c.us.
+        const isLidContact = req.body.isLid || /@lid$/i.test(String(contact));
+        if (req.body.isGroup || req.body.isNewsletter || isLidContact) {
           localArr[index] = contact;
         } else if (numbers.indexOf(contact) < 0) {
-          console.log(contact);
           const profile: any = await req.client
             .checkNumberStatus(contact)
-            .catch((error) => console.log(error));
+            .catch((error) => req.logger.warn(error));
           if (!profile?.numberExists) {
             const num = (contact as any).split('@')[0];
-            res.status(400).json({
+            // RETURN, don't just respond: without this the loop kept running
+            // and `next()` fired below on an already-sent response, handing the
+            // controller a request it could only fail on
+            // ("Cannot set headers after they are sent").
+            return res.status(400).json({
               response: null,
               status: 'Connected',
               message: `O número ${num} não existe.`,
@@ -61,7 +82,10 @@ export default async function statusConnection(
       }
       req.body.phone = localArr;
     } else {
-      res.status(404).json({
+      // Same missing-return as above: this answered 404 and then fell through
+      // to next(), running the controller against a disconnected session on an
+      // already-sent response.
+      return res.status(404).json({
         response: null,
         status: 'Disconnected',
         message: 'A sessão do WhatsApp não está ativa.',

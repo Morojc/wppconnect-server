@@ -53,8 +53,7 @@ export default async function statusConnection(
         // without setting the flag are just as correct, and contactToArray's
         // "longer than 14 digits" heuristic silently misroutes a 14-digit LID
         // to @c.us.
-        const isLidContact =
-          req.body.isLid || /@lid$/i.test(String(contact));
+        const isLidContact = req.body.isLid || /@lid$/i.test(String(contact));
         if (req.body.isGroup || req.body.isNewsletter || isLidContact) {
           localArr[index] = contact;
         } else if (numbers.indexOf(contact) < 0) {

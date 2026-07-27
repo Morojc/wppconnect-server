@@ -69,7 +69,10 @@ export function initServer(serverOptions: Partial<ServerOptions>): {
   // dashboard's human-takeover feature: when the owner replies to a customer
   // manually, the app auto-pauses the AI for that conversation.
   // Accepts "true"/"false" (any other / unset value falls back to config.ts).
-  if (process.env.WEBHOOK_ON_SELF_MESSAGE !== undefined && serverOptions.webhook) {
+  if (
+    process.env.WEBHOOK_ON_SELF_MESSAGE !== undefined &&
+    serverOptions.webhook
+  ) {
     serverOptions.webhook.onSelfMessage =
       String(process.env.WEBHOOK_ON_SELF_MESSAGE).toLowerCase() === 'true';
   }

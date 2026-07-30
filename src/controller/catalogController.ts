@@ -16,6 +16,7 @@
 import { Request, Response } from 'express';
 
 import { createCatalogLink } from '../util/functions';
+import * as resilient from '../util/resilientSend';
 
 export async function getProducts(req: Request, res: Response) {
   /**
@@ -775,7 +776,8 @@ export async function sendLinkCatalog(req: Request, res: Response) {
     const session = await req.client.getWid();
     const catalogLink = createCatalogLink(session);
     for (const phone of phones) {
-      const result = await req.client.sendText(
+      const result = await resilient.sendText(
+        req.client,
         phone,
         `${message} ${catalogLink}`,
         {
@@ -785,7 +787,8 @@ export async function sendLinkCatalog(req: Request, res: Response) {
               text: 'Abrir catálogo',
             },
           ],
-        }
+        },
+        req.logger
       );
       (results as any).push({ phone, status: result.id });
     }

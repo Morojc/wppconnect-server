@@ -17,6 +17,7 @@ import { Chat } from '@wppconnect-team/wppconnect';
 import { Request, Response } from 'express';
 
 import { contactToArray, unlinkAsync } from '../util/functions';
+import * as resilient from '../util/resilientSend';
 import { clientsArray } from '../util/sessionUtil';
 
 function returnSucess(res: any, session: any, phone: any, data: any) {
@@ -955,7 +956,13 @@ export async function reply(req: Request, res: Response) {
   const { phone, text, messageid } = req.body;
 
   try {
-    const response = await req.client.reply(`${phone}@c.us`, text, messageid);
+    const response = await resilient.reply(
+      req.client,
+      `${phone}@c.us`,
+      text,
+      messageid,
+      req.logger
+    );
     res.status(200).json({ status: 'success', response: response });
   } catch (e) {
     req.logger.error(e);
@@ -2303,7 +2310,13 @@ export async function chatWoot(req: Request, res: Response): Promise<any> {
               );
             }
           } else {
-            await client.sendText(contato, message.content);
+            await resilient.sendText(
+              client,
+              contato,
+              message.content,
+              undefined,
+              req.logger
+            );
           }
         }
       }

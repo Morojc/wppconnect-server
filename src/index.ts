@@ -77,6 +77,31 @@ export function initServer(serverOptions: Partial<ServerOptions>): {
       String(process.env.WEBHOOK_ON_SELF_MESSAGE).toLowerCase() === 'true';
   }
 
+  // Deploy-time override (same rationale as the two above).
+  // RESOLVE_LID_TO_PHONE=false stops the server translating `<digits>@lid`
+  // recipients to their `<msisdn>@c.us` JID before sending — an escape hatch in
+  // case an account is LID-first and the phone JID is the wrong address for it.
+  // Accepts "true"/"false" (any other / unset value falls back to src/config.ts).
+  if (process.env.RESOLVE_LID_TO_PHONE !== undefined) {
+    serverOptions.lid = {
+      ...serverOptions.lid,
+      resolveToPhone:
+        String(process.env.RESOLVE_LID_TO_PHONE).toLowerCase() === 'true',
+    };
+  }
+
+  // Deploy-time override (same rationale as the three above).
+  // SEND_TYPING=false stops send-message holding the "typing…" indicator before
+  // the message goes out — the indicator costs real latency on every send, so
+  // it needs an off switch that doesn't require a source rebuild.
+  // Accepts "true"/"false" (any other / unset value falls back to src/config.ts).
+  if (process.env.SEND_TYPING !== undefined) {
+    serverOptions.typing = {
+      ...serverOptions.typing,
+      enabled: String(process.env.SEND_TYPING).toLowerCase() === 'true',
+    };
+  }
+
   defaultLogger.level = serverOptions?.log?.level
     ? serverOptions.log.level
     : 'silly';

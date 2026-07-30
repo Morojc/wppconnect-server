@@ -8,3 +8,8 @@ node_modules
 npm-debug.log
 tokens
 userDataDir
+# Session data and its dated backups: never worth shipping, and the browser
+# profile copies run to hundreds of MB of build context.
+userDataDir.bak.*
+wppconnect_tokens
+wppconnect_tokens.bak.*

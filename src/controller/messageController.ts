@@ -17,6 +17,11 @@
 import { Request, Response } from 'express';
 
 import { unlinkAsync } from '../util/functions';
+import * as resilient from '../util/resilientSend';
+import {
+  resolveTypingDelay,
+  showTypingIndicator,
+} from '../util/typingIndicator';
 
 function returnError(req: Request, res: Response, error: any) {
   req.logger.error(error);
@@ -52,7 +57,9 @@ export async function sendMessage(req: Request, res: Response) {
               isGroup: { type: "boolean" },
               isNewsletter: { type: "boolean" },
               isLid: { type: "boolean" },
+              resolveLid: { type: "boolean" },
               message: { type: "string" },
+              typing: { type: "boolean" },
               options: { type: "object" },
             }
           },
@@ -85,6 +92,22 @@ export async function sendMessage(req: Request, res: Response) {
                 message: 'Hi from WPPConnect',
               }
             },
+            "Send message without the typing indicator": {
+              value: {
+                phone: '5521999999999',
+                isGroup: false,
+                message: 'Hi from WPPConnect',
+                typing: false,
+              }
+            },
+            "Send message typing for a fixed 3 seconds": {
+              value: {
+                phone: '5521999999999',
+                isGroup: false,
+                message: 'Hi from WPPConnect',
+                typing: 3000,
+              }
+            },
           }
         }
       }
@@ -93,11 +116,31 @@ export async function sendMessage(req: Request, res: Response) {
   const { phone, message } = req.body;
 
   const options = req.body.options || {};
+  // Presence before the send, so the recipient sees "typing…" rather than a
+  // reply materialising instantly. Duration scales with the message length;
+  // `typing` in the body overrides (false to skip, a number to set the ms).
+  const typingDelay = resolveTypingDelay(
+    message,
+    req.body.typing,
+    (req.serverOptions as any)?.typing
+  );
 
   try {
     const results: any = [];
     for (const contato of phone) {
-      results.push(await req.client.sendText(contato, message, options));
+      await showTypingIndicator(req.client, contato, typingDelay, req.logger);
+      // Not `req.client.sendText`: its post-send message lookup throws on the
+      // current WhatsApp Web build and would 500 a message already delivered.
+      // See src/util/resilientSend.ts.
+      results.push(
+        await resilient.sendText(
+          req.client,
+          contato,
+          message,
+          options,
+          req.logger
+        )
+      );
     }
 
     if (results.length === 0) res.status(400).json('Error sending message');
@@ -498,7 +541,15 @@ export async function sendButtons(req: Request, res: Response) {
     const results: any = [];
 
     for (const contact of phone) {
-      results.push(await req.client.sendText(contact, message, options));
+      results.push(
+        await resilient.sendText(
+          req.client,
+          contact,
+          message,
+          options,
+          req.logger
+        )
+      );
     }
 
     if (results.length === 0)
@@ -577,11 +628,16 @@ export async function sendListMessage(req: Request, res: Response) {
 
     for (const contact of phone) {
       results.push(
-        await req.client.sendListMessage(contact, {
-          buttonText: buttonText,
-          description: description,
-          sections: sections,
-        })
+        await resilient.sendListMessage(
+          req.client,
+          contact,
+          {
+            buttonText: buttonText,
+            description: description,
+            sections: sections,
+          },
+          req.logger
+        )
       );
     }
 
@@ -683,7 +739,15 @@ export async function sendOrderMessage(req: Request, res: Response) {
   try {
     const results: any = [];
     for (const contato of phone) {
-      results.push(await req.client.sendOrderMessage(contato, items, options));
+      results.push(
+        await resilient.sendOrderMessage(
+          req.client,
+          contato,
+          items,
+          options,
+          req.logger
+        )
+      );
     }
 
     if (results.length === 0)
@@ -743,7 +807,14 @@ export async function sendPollMessage(req: Request, res: Response) {
 
     for (const contact of phone) {
       results.push(
-        await req.client.sendPollMessage(contact, name, choices, options)
+        await resilient.sendPollMessage(
+          req.client,
+          contact,
+          name,
+          choices,
+          options,
+          req.logger
+        )
       );
     }
 
@@ -798,7 +869,15 @@ export async function sendStatusText(req: Request, res: Response) {
 
   try {
     const results: any = [];
-    results.push(await req.client.sendText('status@broadcast', message));
+    results.push(
+      await resilient.sendText(
+        req.client,
+        'status@broadcast',
+        message,
+        undefined,
+        req.logger
+      )
+    );
 
     if (results.length === 0) res.status(400).json('Error sending message');
     returnSucess(res, results);
@@ -849,7 +928,15 @@ export async function replyMessage(req: Request, res: Response) {
   try {
     const results: any = [];
     for (const contato of phone) {
-      results.push(await req.client.reply(contato, message, messageId));
+      results.push(
+        await resilient.reply(
+          req.client,
+          contato,
+          message,
+          messageId,
+          req.logger
+        )
+      );
     }
 
     if (results.length === 0) res.status(400).json('Error sending message');
@@ -1088,10 +1175,12 @@ export async function sendPixMessage(req: Request, res: Response) {
     const results: any = [];
     for (const contato of phone) {
       results.push(
-        await req.client.sendPixKey(
+        await resilient.sendPixKey(
+          req.client,
           contato,
           { keyType, name, key, instructions },
-          options
+          options,
+          req.logger
         )
       );
     }

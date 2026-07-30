@@ -17,6 +17,7 @@ import { Chat } from '@wppconnect-team/wppconnect';
 import { Request, Response } from 'express';
 
 import { contactToArray, unlinkAsync } from '../util/functions';
+import * as resilient from '../util/resilientSend';
 import { clientsArray } from '../util/sessionUtil';
 
 function returnSucess(res: any, session: any, phone: any, data: any) {
@@ -955,7 +956,13 @@ export async function reply(req: Request, res: Response) {
   const { phone, text, messageid } = req.body;
 
   try {
-    const response = await req.client.reply(`${phone}@c.us`, text, messageid);
+    const response = await resilient.reply(
+      req.client,
+      `${phone}@c.us`,
+      text,
+      messageid,
+      req.logger
+    );
     res.status(200).json({ status: 'success', response: response });
   } catch (e) {
     req.logger.error(e);
@@ -1758,28 +1765,13 @@ export async function setTyping(req: Request, res: Response) {
       }
      }
    */
-  // `isLid`/`isNewsletter` were being dropped here, which silently broke typing
-  // for a whole class of contact. contactToArray only routes to the @lid address
-  // space when it is told to, OR when it guesses from `contact.length > 14` —
-  // so a 14-digit LID became `<digits>@c.us`, a chat WA-JS has no record of, and
-  // startTyping threw. Reproduced exactly: 14-character LIDs failed, 15-character
-  // ones succeeded, on the same account.
-  //
-  // sendSeen never had this problem because it iterates `req.body.phone`
-  // directly — statusConnection has already normalised it by then — instead of
-  // re-deriving the address here.
-  const {
-    phone,
-    isGroup = false,
-    isNewsletter = false,
-    isLid = false,
-  } = req.body;
+  const { phone, isGroup = false } = req.body;
   // Normalize value: n8n bodyParameters sends booleans as strings ("true"/"false")
   const value =
     req.body.value == null ? true : String(req.body.value) !== 'false';
   try {
     let response;
-    for (const contato of contactToArray(phone, isGroup, isNewsletter, isLid)) {
+    for (const contato of contactToArray(phone, isGroup)) {
       if (value) response = await req.client.startTyping(contato);
       else response = await req.client.stopTyping(contato);
     }
@@ -2318,7 +2310,13 @@ export async function chatWoot(req: Request, res: Response): Promise<any> {
               );
             }
           } else {
-            await client.sendText(contato, message.content);
+            await resilient.sendText(
+              client,
+              contato,
+              message.content,
+              undefined,
+              req.logger
+            );
           }
         }
       }

@@ -38,6 +38,15 @@ export interface ServerOptions {
   phoneNumber?: {
     defaultCountryCode?: string;
   };
+  lid?: {
+    resolveToPhone?: boolean;
+  };
+  typing?: {
+    enabled?: boolean;
+    msPerChar?: number;
+    minMs?: number;
+    maxMs?: number;
+  };
   log: {
     level: string;
     logger: string[];

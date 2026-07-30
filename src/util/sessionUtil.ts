@@ -16,6 +16,8 @@
 import { Whatsapp } from '@wppconnect-team/wppconnect';
 import { EventEmitter } from 'events';
 
+import { clearLidCache } from './lidResolver';
+
 export const chromiumArgs = [
   '--disable-web-security', // Disables web security
   '--no-sandbox', // Disables sandbox
@@ -47,4 +49,8 @@ export function deleteSessionOnArray(session: string): void {
   const newArray = clientsArray;
   delete clientsArray[session];
   clientsArray = newArray;
+  // The LID->phone mappings belong to the WhatsApp account that was paired.
+  // Dropping them here means a re-pair (logout / clear-session-data both land
+  // in this function) starts from the new account's own mapping table.
+  clearLidCache(session);
 }

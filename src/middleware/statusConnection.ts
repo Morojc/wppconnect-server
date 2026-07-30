@@ -17,6 +17,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import { contactToArray } from '../util/functions';
+import { isLid, resolveLidToPhone } from '../util/lidResolver';
 
 export default async function statusConnection(
   req: Request,
@@ -36,8 +37,8 @@ export default async function statusConnection(
       );
       let index = 0;
       for (const contact of localArr) {
-        // Skip the phone-existence check for address spaces that are NOT phone
-        // numbers.
+        // Route each recipient by address space. Groups, newsletters and LIDs
+        // are NOT phone numbers, so none of them may reach checkNumberStatus.
         //
         // A LID is WhatsApp's privacy identifier for a contact that hasn't
         // shared its number — a 14-17 digit synthetic id, never an MSISDN.
@@ -53,9 +54,28 @@ export default async function statusConnection(
         // without setting the flag are just as correct, and contactToArray's
         // "longer than 14 digits" heuristic silently misroutes a 14-digit LID
         // to @c.us.
-        const isLidContact = req.body.isLid || /@lid$/i.test(String(contact));
-        if (req.body.isGroup || req.body.isNewsletter || isLidContact) {
+        const isLidContact = req.body.isLid || isLid(contact);
+        if (req.body.isGroup || req.body.isNewsletter) {
           localArr[index] = contact;
+        } else if (isLidContact) {
+          // Translate the LID to its phone JID before the controller sends to
+          // it. A LID only routes while the session holds the LID->phone
+          // mapping; when it doesn't, WhatsApp fails the message server-side
+          // (`isSendFailure: true`, ack -1) and — because wppconnect only
+          // throws on `erro === true` — the API still answers 201, so the send
+          // looks successful and never arrives.
+          //
+          // Unresolvable LIDs are passed through untouched: the contact hides
+          // its number, and the LID is then the only address we have. Set
+          // `resolveLid: false` in the body (or RESOLVE_LID_TO_PHONE=false) to
+          // opt out and address the LID directly.
+          const resolveEnabled =
+            req.body.resolveLid !== false &&
+            (req.serverOptions as any)?.lid?.resolveToPhone !== false;
+          const phone = resolveEnabled
+            ? await resolveLidToPhone(req.client, String(contact), req.logger)
+            : null;
+          localArr[index] = phone || contact;
         } else if (numbers.indexOf(contact) < 0) {
           const profile: any = await req.client
             .checkNumberStatus(contact)
